@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -16,7 +15,9 @@ import (
 
 var update = flag.Bool("update", false, "update golden files")
 
-var binaryName = "echo-args"
+var binaryName = "echo-args-coverage"
+
+var binaryPath = ""
 
 func fixturePath(t *testing.T, fixture string) string {
 	_, filename, _, ok := runtime.Caller(0)
@@ -57,13 +58,9 @@ func TestCliArgs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			dir, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
 
-			cmd := exec.Command(path.Join(dir, binaryName), tt.args...)
-			output, err := cmd.CombinedOutput()
+			output, err := runBinary(tt.args)
+
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -89,12 +86,19 @@ func TestMain(m *testing.M) {
 		fmt.Printf("could not change dir: %v", err)
 		os.Exit(1)
 	}
-	make := exec.Command("make")
-	err = make.Run()
+
+	dir, err := os.Getwd()
 	if err != nil {
-		fmt.Printf("could not make binary for %s: %v", binaryName, err)
-		os.Exit(1)
+		fmt.Printf("could not get current dir: %v", err)
 	}
 
+	binaryPath = filepath.Join(dir, binaryName)
+
 	os.Exit(m.Run())
+}
+
+func runBinary(args []string) ([]byte, error) {
+	cmd := exec.Command(binaryPath, args...)
+	cmd.Env = append(os.Environ(), "GOCOVERDIR=.coverdata")
+	return cmd.CombinedOutput()
 }

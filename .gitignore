@@ -1,7 +1,4 @@
-*.exe
-*.dll
-*.so
-*.dylib
-*.test
-*.out
-echo-args
+/echo-args
+/echo-args-coverage
+/.coverdata
+/profile.txt
